@@ -53,16 +53,13 @@ class DetailRiwayatPage extends StatelessWidget {
     final waktuMulai = data['waktu']?.toString() ?? '';
     final waktuSelesai = data['waktu_selesai']?.toString() ?? '';
     final durasi = data['durasi'] ?? 1;
-    final statusMain = _getStatus(
-      data,
-    ); // Menggunakan fungsi _getStatus untuk mendapatkan status dinamis
+    final statusMain = _getStatus(data);
     final statusPembayaran = data['status_pembayaran']?.toString() ?? 'Pending';
     final orderId = data['order_id']?.toString() ?? '–';
     final totalHarga =
         (data['total_harga'] ?? 0) is num
             ? data['total_harga'] as num
             : num.tryParse(data['total_harga'].toString()) ?? 0;
-
     final metodePembayaran =
         data['metode_pembayaran']?.toString() ?? 'Midtrans';
 
@@ -138,61 +135,64 @@ class DetailRiwayatPage extends StatelessWidget {
               ),
             ),
 
-            // Card Gambar Lapangan
+            // Card Gambar Lapangan (sudah full width)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: gambarWidget,
                       ),
-                      child: gambarWidget,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nama,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nama,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'LokaPadel Jakarta',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
+                            const SizedBox(height: 4),
+                            Text(
+                              'LokaPadel Jakarta',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Status Pembayaran: $statusPembayaran',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color:
-                                  statusPembayaran == 'Sukses'
-                                      ? Colors.green[800]
-                                      : (statusPembayaran == 'Pending'
-                                          ? Colors.orange[800]
-                                          : Colors.red[800]),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Status Pembayaran: $statusPembayaran',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color:
+                                    statusPembayaran == 'Sukses'
+                                        ? Colors.green[800]
+                                        : (statusPembayaran == 'Pending'
+                                            ? Colors.orange[800]
+                                            : Colors.red[800]),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -200,115 +200,85 @@ class DetailRiwayatPage extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Rincian Waktu
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Rincian Waktu',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow('Tanggal: $tanggal', Colors.black87),
-                      const SizedBox(height: 6),
-                      _buildInfoRow(
-                        'Waktu: $waktuMulai - $waktuSelesai ($durasi jam)',
-                        Colors.black87,
-                      ),
-                    ],
+            _buildSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Rincian Waktu',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  _buildInfoRow('Tanggal: $tanggal', Colors.black87),
+                  const SizedBox(height: 6),
+                  _buildInfoRow(
+                    'Waktu: $waktuMulai - $waktuSelesai ($durasi jam)',
+                    Colors.black87,
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 12),
 
             // Detail Transaksi
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Detail Transaksi',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow('Nomor Pesanan: $orderId', Colors.black87),
-                      const SizedBox(height: 6),
-                      _buildInfoRow(
-                        'Metode Bayar: $metodePembayaran',
-                        Colors.black87,
-                      ),
-                    ],
+            _buildSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Detail Transaksi',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  _buildInfoRow('Nomor Pesanan: $orderId', Colors.black87),
+                  const SizedBox(height: 6),
+                  _buildInfoRow(
+                    'Metode Bayar: $metodePembayaran',
+                    Colors.black87,
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 12),
 
             // Rincian Pembayaran
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Rincian Pembayaran',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildPriceRow(
-                        'Sewa Lapangan ($durasi Jam)',
-                        _formatHarga(totalHarga),
-                        false,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildPriceRow('Biaya Admin', 'Rp 0', false),
-                      const Divider(height: 24),
-                      _buildPriceRow(
-                        'TOTAL PEMBAYARAN',
-                        _formatHarga(totalHarga),
-                        true,
-                      ),
-                    ],
+            _buildSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Rincian Pembayaran',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  _buildPriceRow(
+                    'Sewa Lapangan ($durasi Jam)',
+                    _formatHarga(totalHarga),
+                    false,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPriceRow('Biaya Admin', 'Rp 0', false),
+                  const Divider(height: 24),
+                  _buildPriceRow(
+                    'TOTAL PEMBAYARAN',
+                    _formatHarga(totalHarga),
+                    true,
+                  ),
+                ],
               ),
             ),
 
@@ -359,6 +329,23 @@ class DetailRiwayatPage extends StatelessWidget {
 
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Helper card supaya semua section punya lebar penuh & radius konsisten
+  Widget _buildSectionCard({required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(padding: const EdgeInsets.all(16), child: child),
         ),
       ),
     );
@@ -432,7 +419,6 @@ class DetailRiwayatPage extends StatelessWidget {
               ),
               pw.SizedBox(height: 16),
               pw.Divider(),
-
               pw.SizedBox(height: 8),
               pw.Text('No. Pesanan  : $orderId'),
               pw.Text('Tanggal      : $tanggal'),
@@ -445,7 +431,6 @@ class DetailRiwayatPage extends StatelessWidget {
               pw.SizedBox(height: 16),
               pw.Divider(),
               pw.SizedBox(height: 8),
-
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -459,7 +444,6 @@ class DetailRiwayatPage extends StatelessWidget {
                   ),
                 ],
               ),
-
               pw.SizedBox(height: 24),
               pw.Text(
                 'Terima kasih telah bermain di LokaPadel.',
@@ -475,7 +459,6 @@ class DetailRiwayatPage extends StatelessWidget {
       ),
     );
 
-    // Buka dialog print / simpan PDF / share
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => doc.save(),
     );

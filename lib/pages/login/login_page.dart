@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:loka_padel/main.dart';
 import 'package:loka_padel/services/auth_service.dart';
 import '../daftar/daftar_page.dart';
+import '../welcome/welcome_page.dart'; // WelcomePage
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final result = await AuthService.instance.login(
-        _emailCtrl.text.trim(),
+        _emailCtrl.text.trim().toLowerCase(), // paksa lowercase ke backend
         _passCtrl.text,
       );
 
@@ -223,11 +224,32 @@ class _LoginPageState extends State<LoginPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildSocialIcon('assets/icons/facebook.png'),
+                            _buildSocialIcon('assets/icons/facebook.png', () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WelcomePage(),
+                                ),
+                              );
+                            }),
                             const SizedBox(width: 25),
-                            _buildSocialIcon('assets/icons/google.png'),
+                            _buildSocialIcon('assets/icons/google.png', () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WelcomePage(),
+                                ),
+                              );
+                            }),
                             const SizedBox(width: 25),
-                            _buildSocialIcon('assets/icons/instagram.png'),
+                            _buildSocialIcon('assets/icons/instagram.png', () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WelcomePage(),
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ],
@@ -249,16 +271,32 @@ class _LoginPageState extends State<LoginPage> {
     bool obscureText = false,
     TextInputType? keyboardType,
   }) {
+    final bool isEmailField = hint == "Email";
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       style: const TextStyle(color: Colors.white),
       keyboardType: keyboardType,
+      // Tidak ada inputFormatter: biarkan user mengetik apa saja,
+      // tapi kita paksa jadi lowercase di onChanged.
+      onChanged:
+          isEmailField
+              ? (value) {
+                final lower = value.toLowerCase();
+                if (lower != value) {
+                  controller.value = controller.value.copyWith(
+                    text: lower,
+                    selection: TextSelection.collapsed(offset: lower.length),
+                  );
+                }
+              }
+              : null,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '$hint tidak boleh kosong';
         }
-        if (hint == "Email" && !value.contains('@')) {
+        if (isEmailField && !value.contains('@')) {
           return 'Email harus mengandung @';
         }
         return null;
@@ -281,9 +319,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildSocialIcon(String path) {
+  Widget _buildSocialIcon(String path, VoidCallback onTap) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Image.asset(path, width: 40, height: 40),
     );
   }

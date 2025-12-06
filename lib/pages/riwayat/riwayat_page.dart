@@ -130,6 +130,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
         backgroundColor: const Color(0xFF002B5B),
         title: const Text("Riwayat", style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        automaticallyImplyLeading:
+            false, // ⬅️ ini yang menonaktifkan tombol back
       ),
       body: RefreshIndicator(
         onRefresh: _loadRiwayat,
@@ -178,9 +180,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 : num.tryParse(totalHargaRaw.toString()) ?? 0;
 
         final harga = _formatHarga(totalHarga);
-        String status = _getStatus(data); // Menggunakan fungsi _getStatus
+        String status = _getStatus(data);
 
-        // Gambar dari backend
         final gambarUrl = data['lapangan_gambar']?.toString();
         Widget gambarWidget;
         if (gambarUrl != null && gambarUrl.startsWith('http')) {
@@ -191,7 +192,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
             fit: BoxFit.cover,
           );
         } else {
-          // fallback kalau backend tidak kirim gambar
           gambarWidget = Image.asset(
             'assets/img/indoor.jpg',
             height: 120,
@@ -262,7 +262,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Badge status main
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

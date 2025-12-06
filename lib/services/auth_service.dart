@@ -14,12 +14,14 @@ class AuthService {
   String? _email;
   String? _role;
   String? _token;
+  String? _avatarUrl; // URL foto profil
 
   int? get userId => _userId;
   String get userName => _userName ?? '';
   String get email => _email ?? '';
   String? get role => _role;
   String? get token => _token;
+  String get avatarUrl => _avatarUrl ?? '';
 
   /// Login ke backend Laravel
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -46,15 +48,25 @@ class AuthService {
       _email = user["email"]?.toString();
       _role = user["role"]?.toString();
       _token = body["token"]?.toString();
+
+      // kalau suatu saat API login mengirim url foto, bisa dibaca di sini
+      if (user["profile_photo_url"] != null) {
+        _avatarUrl = user["profile_photo_url"].toString();
+      }
     }
 
     return {"status": response.statusCode, "data": body};
   }
 
-  /// Update nama / email setelah edit profile
+  /// Update nama / email setelah edit profile (tanpa API)
   void updateProfile({String? name, String? email}) {
     if (name != null) _userName = name;
     if (email != null) _email = email;
+  }
+
+  /// Update URL avatar setelah upload foto profil
+  void updateAvatar(String url) {
+    _avatarUrl = url;
   }
 
   /// Bersihkan data saat logout
@@ -64,5 +76,6 @@ class AuthService {
     _email = null;
     _role = null;
     _token = null;
+    _avatarUrl = null;
   }
 }

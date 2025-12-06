@@ -33,6 +33,7 @@ class _BookingPageState extends State<BookingPage> {
 
   String? _lastOrderId;
 
+  /// Semua pilihan jam (master)
   final List<String> jamMulaiOptions = [
     '06:00',
     '07:00',
@@ -51,6 +52,21 @@ class _BookingPageState extends State<BookingPage> {
     '20:00',
     '21:00',
   ];
+
+  /// Jam yang benar-benar tersedia (setelah difilter backend)
+  List<String> _availableJam = [];
+
+  /// Status loading saat fetch jam dari backend
+  bool _isLoadingJam = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // default: sebelum API, tampilkan semua
+    _availableJam = List.from(jamMulaiOptions);
+    // load jam tersedia untuk tanggal hari ini
+    _loadAvailableJam();
+  }
 
   /// Hitung total & jam selesai
   void _recalculate() {
@@ -74,6 +90,55 @@ class _BookingPageState extends State<BookingPage> {
       _waktuSelesaiText = endStr;
       _totalHarga = widget.hargaPerJam * _durasi;
     });
+  }
+
+  /// Ambil jam yang masih tersedia dari backend
+  Future<void> _loadAvailableJam() async {
+    setState(() {
+      _isLoadingJam = true;
+    });
+
+    try {
+      final tanggalIso = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+      final response = await ApiClient.get(
+        'pemesanan/jam-tersedia?lapangan_id=${widget.lapanganId}&tanggal=$tanggalIso',
+        token: AuthService.instance.token,
+      );
+
+      debugPrint('LOAD JAM status: ${response.statusCode}');
+      debugPrint('LOAD JAM body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        if (decoded['success'] == true) {
+          final List<dynamic> data = decoded['available'] ?? [];
+
+          final List<String> newAvailable =
+              data.map((e) => e.toString()).toList()..sort();
+
+          setState(() {
+            _availableJam = newAvailable;
+
+            // Jika jam yang sebelumnya dipilih sudah tidak available, reset
+            if (!_availableJam.contains(_selectedJamMulai)) {
+              _selectedJamMulai = null;
+              _durasi = 1;
+              _waktuSelesaiText = null;
+              _totalHarga = 0;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error load jam: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingJam = false;
+        });
+      }
+    }
   }
 
   /// Submit booking + SnapToken
@@ -164,6 +229,7 @@ class _BookingPageState extends State<BookingPage> {
                   tanggal: tanggalFormat, // Tanggal yang sudah diformat
                   waktu: waktuDisplay, // Waktu yang sudah diformat
                   total: _totalHarga, // Total harga
+                  orderId: _lastOrderId ?? '',
                 ),
           ),
         );
@@ -231,17 +297,23 @@ class _BookingPageState extends State<BookingPage> {
                     isExpanded: true,
                     value: _selectedJamMulai,
                     underline: Container(),
-                    hint: const Text("Pilih jam mulai"),
+                    hint:
+                        _isLoadingJam
+                            ? const Text("Memuat jam tersedia...")
+                            : const Text("Pilih jam mulai"),
                     items:
-                        jamMulaiOptions
+                        _availableJam
                             .map(
                               (e) => DropdownMenuItem(value: e, child: Text(e)),
                             )
                             .toList(),
-                    onChanged: (value) {
-                      setState(() => _selectedJamMulai = value);
-                      _recalculate();
-                    },
+                    onChanged:
+                        _isLoadingJam
+                            ? null
+                            : (value) {
+                              setState(() => _selectedJamMulai = value);
+                              _recalculate();
+                            },
                   ),
                 ),
 
@@ -368,9 +440,12 @@ class _BookingPageState extends State<BookingPage> {
     final firstDayOfMonth = DateTime(focusedMonth.year, focusedMonth.month, 1);
     final daysInMonth =
         DateTime(focusedMonth.year, focusedMonth.month + 1, 0).day;
-    final startWeekday = firstDayOfMonth.weekday % 7;
+
+    // Monday = 1 -> 0, Sunday = 7 -> 6
+    final startWeekday = firstDayOfMonth.weekday - 1;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -389,29 +464,42 @@ class _BookingPageState extends State<BookingPage> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
+
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children:
               ['M', 'S', 'S', 'R', 'K', 'J', 'S']
                   .map(
-                    (e) => Text(
-                      e,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    (e) => Expanded(
+                      child: Center(
+                        child: Text(
+                          e,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
                   )
                   .toList(),
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (int i = 0; i < startWeekday; i++)
-              const SizedBox(width: 38, height: 38),
-            for (int i = 1; i <= daysInMonth; i++) _buildDayButton(i),
-          ],
+        const SizedBox(height: 4),
+
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
+            childAspectRatio: 2.0,
+          ),
+          itemCount: startWeekday + daysInMonth,
+          itemBuilder: (context, index) {
+            if (index < startWeekday) {
+              return const SizedBox.shrink();
+            }
+            final day = index - startWeekday + 1;
+            return _buildDayButton(day);
+          },
         ),
       ],
     );
@@ -425,7 +513,16 @@ class _BookingPageState extends State<BookingPage> {
         selectedDate.year == focusedMonth.year;
 
     return GestureDetector(
-      onTap: () => setState(() => selectedDate = date),
+      onTap: () {
+        setState(() {
+          selectedDate = date;
+          _selectedJamMulai = null;
+          _durasi = 1;
+          _waktuSelesaiText = null;
+          _totalHarga = 0;
+        });
+        _loadAvailableJam(); // reload jam untuk tanggal baru
+      },
       child: Container(
         width: 38,
         height: 38,

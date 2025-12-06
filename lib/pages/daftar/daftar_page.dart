@@ -56,7 +56,8 @@ class _DaftarPageState extends State<DaftarPage> {
         headers: {'Accept': 'application/json'},
         body: {
           'name': _nameCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(),
+          // 👉 kirim email selalu dalam huruf kecil
+          'email': _emailCtrl.text.trim().toLowerCase(),
           'password': _passCtrl.text,
         },
       );
@@ -150,6 +151,7 @@ class _DaftarPageState extends State<DaftarPage> {
                           hint: 'Email',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
+                          isEmail: true, // 👉 penting: aktifkan mode email
                         ),
                         const SizedBox(height: 20),
                         _buildTextField(
@@ -250,18 +252,39 @@ class _DaftarPageState extends State<DaftarPage> {
     required IconData icon,
     bool obscureText = false,
     TextInputType? keyboardType,
+    bool isEmail = false, // 👉 tambahan flag untuk field email
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       style: const TextStyle(color: Colors.white),
       keyboardType: keyboardType,
+      onChanged:
+          isEmail
+              ? (value) {
+                // paksa semua jadi huruf kecil
+                final lower = value.toLowerCase();
+                if (value != lower) {
+                  final cursorPos = lower.length;
+                  controller.value = TextEditingValue(
+                    text: lower,
+                    selection: TextSelection.collapsed(offset: cursorPos),
+                  );
+                }
+              }
+              : null,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '$hint tidak boleh kosong';
         }
-        if (hint == 'Email' && !value.contains('@')) {
-          return 'Format email tidak valid';
+        if (isEmail) {
+          if (!value.contains('@')) {
+            return 'Format email tidak valid';
+          }
+          // kalau mau ekstra strict: pastikan tidak ada huruf besar
+          if (value != value.toLowerCase()) {
+            return 'Email harus menggunakan huruf kecil semua';
+          }
         }
         return null;
       },
